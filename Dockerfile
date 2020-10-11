@@ -1,6 +1,6 @@
 FROM openjdk:11-jre-slim
 
-ENV VERSION=v104.6
+ENV VERSION=null
 
 RUN apt-get update && \
     apt-get install -y curl
