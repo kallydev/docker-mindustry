@@ -1,0 +1,43 @@
+name: Check Mindustry update
+on:
+  schedule:
+    - cron: '*/5 * * * *'
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v2
+        with:
+          persist-credentials: false
+      - name: Get the latest Mindustry version
+        run: |
+          VERSION=$(curl -sL "https://api.github.com/repos/Anuken/Mindustry/releases/latest" | jq -r ".tag_name")
+          sed -r -i "s/^ENV VERSION=.*$/ENV VERSION=${VERSION}/g" Dockerfile
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+      - name: Check Mindustry version update
+        id: check-mindustry-version
+        run: echo ::set-output name=updated::$([ -z "$(git status --porcelain)" ] && echo "false" || echo "true")
+      - name: Setup Git configuration
+        if: steps.check-mindustry-version.outputs.updated == 'true'
+        env:
+          ACTIONS_GPG_PRIVATE_KEY: ${{ secrets.ACTIONS_GPG_PRIVATE_KEY }}
+        run: |
+          mkdir -p ~/.gnupg
+          echo "${ACTIONS_GPG_PRIVATE_KEY}" | base64 --decode > ~/.gnupg/private.key
+          gpg --import ~/.gnupg/private.key
+      - name: Setup Git Config
+        if: steps.check-mindustry-version.outputs.updated == 'true'
+        run: |
+          git config --global user.name 'kallydev'
+          git config --global user.email 'kallydev@gmail.com'
+      - name: Commit latest release version
+        if: steps.check-mindustry-version.outputs.updated == 'true'
+        env:
+          REPOSITORY_ACTOR: ${{ github.ACTOR }}
+          REPOSITORY_NAME: ${{ github.REPOSITORY }}
+          ACTIONS_GITHUB_TOKEN: ${{ secrets.ACTIONS_GITHUB_TOKEN }}
+        run: |
+          git commit -am "build: update version to $VERSION" -S
+          git tag $VERSION
+          git push "https://${REPOSITORY_ACTOR}:${ACTIONS_GITHUB_TOKEN}@github.com/${REPOSITORY_NAME}.git" HEAD:main --tags
