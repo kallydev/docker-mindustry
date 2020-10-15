@@ -13,8 +13,10 @@ jobs:
       - name: Get the latest Mindustry version
         run: |
           VERSION=$(curl -sL "https://api.github.com/repos/Anuken/Mindustry/releases/latest" | jq -r ".tag_name")
-          sed -r -i "s/^ENV VERSION=.*$/ENV VERSION=${VERSION}/g" Dockerfile
-          echo "VERSION=$VERSION" >> $GITHUB_ENV
+		  if [ "$VERSION" = "null" ]; then
+            sed -r -i "s/^ENV VERSION=.*$/ENV VERSION=${VERSION}/g" Dockerfile
+            echo "VERSION=$VERSION" >> $GITHUB_ENV
+          fi
       - name: Check Mindustry version update
         id: check-mindustry-version
         run: echo ::set-output name=updated::$([ -z "$(git status --porcelain)" ] && echo "false" || echo "true")
