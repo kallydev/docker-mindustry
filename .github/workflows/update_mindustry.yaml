@@ -13,7 +13,7 @@ jobs:
       - name: Get the latest Mindustry version
         run: |
           VERSION=$(curl -sL "https://api.github.com/repos/Anuken/Mindustry/releases/latest" | jq -r ".tag_name")
-		  if [ "$VERSION" = "null" ]; then
+          if [ "$VERSION" = "null" ]; then
             sed -r -i "s/^ENV VERSION=.*$/ENV VERSION=${VERSION}/g" Dockerfile
             echo "VERSION=$VERSION" >> $GITHUB_ENV
           fi
